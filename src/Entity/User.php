@@ -10,6 +10,9 @@ use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -21,7 +24,8 @@ use Symfony\Component\Validator\Constraints as Assert;
         new GetCollection()],
     normalizationContext: ['groups' => ['read']]
 )]
-class User implements \Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface
+#[UniqueEntity(fields: ['email', 'username'])]
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -64,10 +68,21 @@ class User implements \Symfony\Component\Security\Core\User\PasswordAuthenticate
     #[Assert\NotBlank]
     #[Assert\Regex(
         pattern: '/(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{7,}/',
-        message: 'Votre mot de passe doit contenir au moins sept caractères, une majuscule, une minuscule et un chiffre.',
+        message: 'Votre mot de passe doit contenir au minimum sept caractères, une majuscule, une minuscule et un chiffre.',
         match: true,
     )]
     private ?string $password = null;
+
+    #[Assert\NotBlank]
+    #[Assert\Expression(
+        'this.getPassword() === this.getConfirmedPassword()',
+        message: 'Les mots de passe doivent correspondre'
+    )
+    ]
+    private ?string $confirmedPassword = null;
+
+    #[ORM\Column]
+    private array $roles = [];
 
     #[ORM\OneToMany(mappedBy: 'author', targetEntity: BlogPost::class)]
     #[Groups(['read'])]
@@ -76,6 +91,8 @@ class User implements \Symfony\Component\Security\Core\User\PasswordAuthenticate
     #[ORM\OneToMany(mappedBy: 'author', targetEntity: Comment::class)]
     #[Groups(['read'])]
     private Collection $comments;
+
+
 
     public function __construct()
     {
@@ -148,6 +165,33 @@ class User implements \Symfony\Component\Security\Core\User\PasswordAuthenticate
         return $this;
     }
 
+    public function getConfirmedPassword(): ?string
+    {
+        return $this->confirmedPassword;
+    }
+
+    public function setConfirmedPassword(string $confirmedPassword): self
+    {
+        $this->confirmedPassword = $confirmedPassword;
+
+        return $this;
+    }
+
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
+    }
+
+    public function setRoles(array $roles): self
+    {
+        $this->roles = $roles;
+
+        return $this;
+    }
+
     /**
      * @return Collection<int, BlogPost>
      */
@@ -206,5 +250,15 @@ class User implements \Symfony\Component\Security\Core\User\PasswordAuthenticate
         }
 
         return $this;
+    }
+
+    public function eraseCredentials()
+    {
+        // TODO: Implement eraseCredentials() method.
+    }
+
+    public function getUserIdentifier(): string
+    {
+        // TODO: Implement getUserIdentifier() method.
     }
 }
