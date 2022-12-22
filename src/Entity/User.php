@@ -5,41 +5,54 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ApiResource(
-    operations: [ new Get(), new GetCollection()]
+    operations: [
+        new Get(),
+        new Post(),
+        new GetCollection()],
+    normalizationContext: ['groups' => ['read']]
 )]
 class User implements \Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
+    #[Groups(['read'])]
     #[ORM\Column]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['read'])]
     private ?string $username = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['read'])]
     private ?string $email = null;
 
     #[ORM\Column(length: 100)]
+    #[Groups(['read'])]
     private ?string $lastname = null;
 
     #[ORM\Column(length: 100)]
+    #[Groups(['read'])]
     private ?string $firstname = null;
 
     #[ORM\Column(length: 255)]
     private ?string $password = null;
 
     #[ORM\OneToMany(mappedBy: 'author', targetEntity: BlogPost::class)]
+    #[Groups(['read'])]
     private Collection $blogPosts;
 
     #[ORM\OneToMany(mappedBy: 'author', targetEntity: Comment::class)]
+    #[Groups(['read'])]
     private Collection $comments;
 
     public function __construct()
