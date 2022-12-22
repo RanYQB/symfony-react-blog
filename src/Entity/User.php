@@ -11,6 +11,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ApiResource(
@@ -30,21 +31,42 @@ class User implements \Symfony\Component\Security\Core\User\PasswordAuthenticate
 
     #[ORM\Column(length: 255)]
     #[Groups(['read'])]
+    #[Assert\NotBlank]
     private ?string $username = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(['read'])]
+    #[Assert\NotBlank]
+    #[Assert\Email(message: 'L\'adresse mail {{value}} n\'est pas valide.')]
     private ?string $email = null;
 
     #[ORM\Column(length: 100)]
     #[Groups(['read'])]
+    #[Assert\NotBlank]
+    #[Assert\Regex(
+        pattern: '/\d/',
+        message: 'Votre nom ne peut pas contenir de chiffres.',
+        match: false,
+    )]
     private ?string $lastname = null;
 
     #[ORM\Column(length: 100)]
     #[Groups(['read'])]
+    #[Assert\NotBlank]
+    #[Assert\Regex(
+        pattern: '/\d/',
+        message: 'Votre prénom ne peut pas contenir de chiffres.',
+        match: false,
+    )]
     private ?string $firstname = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Regex(
+        pattern: '/(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{7,}/',
+        message: 'Votre mot de passe doit contenir au moins sept caractères, une majuscule, une minuscule et un chiffre.',
+        match: true,
+    )]
     private ?string $password = null;
 
     #[ORM\OneToMany(mappedBy: 'author', targetEntity: BlogPost::class)]
