@@ -6,6 +6,7 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -19,33 +20,43 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ApiResource(
     operations: [
-        new Get(),
-        new Post(),
-        new GetCollection()],
-    normalizationContext: ['groups' => ['read']]
+        new Get(
+            normalizationContext: ['groups' => 'get'],
+            security: "is_granted('IS_AUTHENTICATED_FULLY')",
+        ),
+        new Put(
+            denormalizationContext: ['groups' => 'put'],
+            security: "is_granted('IS_AUTHENTICATED_FULLY') and object == user"
+        ),
+        new Post(
+            denormalizationContext: ['groups' => 'post']
+        ),
+        new GetCollection()
+    ],
+    normalizationContext: ['groups' => 'get']
 )]
 #[UniqueEntity(fields: ['email', 'username'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[Groups(['read'])]
+    #[Groups(['get'])]
     #[ORM\Column]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['read'])]
+    #[Groups(['get', 'post'])]
     #[Assert\NotBlank]
     private ?string $username = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['read'])]
+    #[Groups(['post', 'put'])]
     #[Assert\NotBlank]
     #[Assert\Email(message: 'L\'adresse mail {{value}} n\'est pas valide.')]
     private ?string $email = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['read'])]
+    #[Groups(['get', 'post', 'put'])]
     #[Assert\NotBlank]
     #[Assert\Regex(
         pattern: '/\d/',
@@ -55,7 +66,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $lastname = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['read'])]
+    #[Groups(['get', 'post', 'put'])]
     #[Assert\NotBlank]
     #[Assert\Regex(
         pattern: '/\d/',
@@ -65,6 +76,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $firstname = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['post', 'put'])]
     #[Assert\NotBlank]
     #[Assert\Regex(
         pattern: '/(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{7,}/',
@@ -74,22 +86,22 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[Assert\NotBlank]
+    #[Groups(['post', 'put'])]
     #[Assert\Expression(
         'this.getPassword() === this.getConfirmedPassword()',
         message: 'Les mots de passe doivent correspondre'
-    )
-    ]
+    )]
     private ?string $confirmedPassword = null;
 
     #[ORM\Column]
     private array $roles = [];
 
     #[ORM\OneToMany(mappedBy: 'author', targetEntity: BlogPost::class)]
-    #[Groups(['read'])]
+    #[Groups(['get'])]
     private Collection $blogPosts;
 
     #[ORM\OneToMany(mappedBy: 'author', targetEntity: Comment::class)]
-    #[Groups(['read'])]
+    #[Groups(['get'])]
     private Collection $comments;
 
 
@@ -259,6 +271,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getUserIdentifier(): string
     {
-        // TODO: Implement getUserIdentifier() method.
+        return (string) $this->username;
     }
 }

@@ -5,15 +5,26 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use App\Repository\BlogPostRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: BlogPostRepository::class)]
 #[ApiResource(
-    operations: [ new Get(), new GetCollection()]
+    operations: [
+        new Get(),
+        new Put(
+            security: "is_granted('IS_AUTHENTICATED_FULLY') and object.getAuthor() == user"
+        ),
+        new Post(
+            security: "is_granted('IS_AUTHENTICATED_FULLY')"
+        ),
+        new GetCollection()]
 )]
 class BlogPost
 {
@@ -23,19 +34,36 @@ class BlogPost
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(
+        min: 10,
+        max: 100,
+        minMessage: 'Your title must be at least {{ limit }} characters long',
+        maxMessage: 'Your title cannot be longer than {{ limit }} characters',
+    )]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Assert\NotBlank]
+    #[Assert\Length(
+        min: 20,
+        max: 500,
+        minMessage: 'Your post must be at least {{ limit }} characters long',
+        maxMessage: 'Your post cannot be longer than {{ limit }} characters',
+    )]
     private ?string $content = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
     private ?string $slug = null;
 
     #[ORM\Column]
+    #[Assert\NotBlank]
     private ?\DateTimeImmutable $publishedAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'blogPosts')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotBlank]
     private ?User $author = null;
 
     #[ORM\OneToMany(mappedBy: 'post', targetEntity: Comment::class, orphanRemoval: true)]
@@ -93,7 +121,7 @@ class BlogPost
         return $this->publishedAt;
     }
 
-    public function setPublishedAt(?\DateTimeImmutable $publishedAt): self
+    public function setPublishedAt(?\DateTimeImmutable $publishedAt = null): self
     {
         $this->publishedAt = $publishedAt;
 
