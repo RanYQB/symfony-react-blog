@@ -29,7 +29,7 @@ class PostFixtures extends Fixture implements DependentFixtureInterface
             $blogPost = new BlogPost();
             $blogPost->setTitle($faker->sentence());
             $blogPost->setContent($faker->text());
-            $users = $this->userRepository->findAll();
+            $users = $this->userRepository->findUsers('ROLE_WRITER');
             $author = array_rand($users);
             $blogPost->setAuthor($users[$author]);
             $blogPost->setSlug($this->slugger->slug($blogPost->getTitle())->lower());

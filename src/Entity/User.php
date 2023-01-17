@@ -21,19 +21,19 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ApiResource(
     operations: [
         new Get(
-            normalizationContext: ['groups' => 'get'],
+            normalizationContext: ['groups' => ['get']],
             security: "is_granted('IS_AUTHENTICATED_FULLY')",
         ),
         new Put(
-            denormalizationContext: ['groups' => 'put'],
+            denormalizationContext: ['groups' => ['put']],
             security: "is_granted('IS_AUTHENTICATED_FULLY') and object == user"
         ),
         new Post(
-            denormalizationContext: ['groups' => 'post']
+            denormalizationContext: ['groups' => ['post']]
         ),
         new GetCollection()
     ],
-    normalizationContext: ['groups' => 'get']
+    normalizationContext: ['groups' => ['get']]
 )]
 #[UniqueEntity(fields: ['email', 'username'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
@@ -45,7 +45,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['get', 'post'])]
+    #[Groups(['get', 'post', 'get-comments', 'get-post-with-author'])]
     #[Assert\NotBlank]
     private ?string $username = null;
 
@@ -56,7 +56,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $email = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['get', 'post', 'put'])]
+    #[Groups(['get', 'post', 'put', 'get-comments', 'get-post-with-author'])]
     #[Assert\NotBlank]
     #[Assert\Regex(
         pattern: '/\d/',
@@ -66,7 +66,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $lastname = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['get', 'post', 'put'])]
+    #[Groups(['get', 'post', 'put', 'get-comments', 'get-post-with-author'])]
     #[Assert\NotBlank]
     #[Assert\Regex(
         pattern: '/\d/',

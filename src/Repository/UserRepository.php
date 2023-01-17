@@ -39,6 +39,15 @@ class UserRepository extends ServiceEntityRepository
         }
     }
 
+    public function findUsers(?string $role)
+    {
+        $query = $this->createQueryBuilder('u')
+            ->orderBy('u.firstname', 'ASC')
+            ->where('u.roles LIKE :val')
+            ->setParameter('val', '%'.$role.'%');
+        return $query->getQuery()->getResult();
+}
+
 //    /**
 //     * @return User[] Returns an array of User objects
 //     */

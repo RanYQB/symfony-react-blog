@@ -12,21 +12,26 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: BlogPostRepository::class)]
 #[ApiResource(
     operations: [
-        new Get(),
+        new Get(
+            normalizationContext: ['groups' => ['get-post-with-author']]
+        ),
         new Put(
-            security: "is_granted('IS_AUTHENTICATED_FULLY') and object.getAuthor() == user"
+            security: "is_granted('ROLE_EDITOR') or (is_granted('ROLE_WRITER') and object.getAuthor() == user)"
         ),
         new Post(
-            security: "is_granted('IS_AUTHENTICATED_FULLY')"
+            denormalizationContext: ['groups' => ['post']],
+            security: "is_granted('ROLE_WRITER')"
         ),
         new GetCollection()]
 )]
-class BlogPost
+class BlogPost implements AuthoredEntityinterface, PublishedEntityInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -35,38 +40,42 @@ class BlogPost
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
+    #[Groups(['post', 'get-post-with-author'])]
     #[Assert\Length(
         min: 10,
         max: 100,
         minMessage: 'Your title must be at least {{ limit }} characters long',
-        maxMessage: 'Your title cannot be longer than {{ limit }} characters',
-    )]
+        maxMessage: 'Your title cannot be longer than {{ limit }} characters',)]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
     #[Assert\NotBlank]
+    #[Groups(['post', 'get-post-with-author'])]
     #[Assert\Length(
         min: 20,
-        max: 500,
+        max: 3000,
         minMessage: 'Your post must be at least {{ limit }} characters long',
-        maxMessage: 'Your post cannot be longer than {{ limit }} characters',
-    )]
+        maxMessage: 'Your post cannot be longer than {{ limit }} characters',)]
     private ?string $content = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
+    #[Groups(['post', 'get-post-with-author'])]
     private ?string $slug = null;
 
     #[ORM\Column]
     #[Assert\NotBlank]
+    #[Groups(['get-post-with-author'])]
     private ?\DateTimeImmutable $publishedAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'blogPosts')]
     #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotBlank]
+    #[Groups(['post', 'get-post-with-author'])]
     private ?User $author = null;
 
     #[ORM\OneToMany(mappedBy: 'post', targetEntity: Comment::class, orphanRemoval: true)]
+    #[Groups(['get-post-with-author'])]
     private Collection $comments;
 
     public function __construct()
@@ -121,7 +130,7 @@ class BlogPost
         return $this->publishedAt;
     }
 
-    public function setPublishedAt(?\DateTimeImmutable $publishedAt = null): self
+    public function setPublishedAt(?\DateTimeImmutable $publishedAt): PublishedEntityInterface
     {
         $this->publishedAt = $publishedAt;
 
@@ -133,7 +142,10 @@ class BlogPost
         return $this->author;
     }
 
-    public function setAuthor(?User $author): self
+    /**
+     * @param UserInterface $author
+     * */
+    public function setAuthor(UserInterface $author): AuthoredEntityinterface
     {
         $this->author = $author;
 

@@ -28,7 +28,7 @@ class CommentFixtures extends Fixture implements DependentFixtureInterface
         for($i = 1; $i <= 80; $i++){
             $comment = new Comment();
             $comment->setContent($faker->text());
-            $users = $this->userRepository->findAll();
+            $users = $this->userRepository->findUsers('ROLE_COMMENTATOR');
             $author = array_rand($users);
             $blogPosts = $this->blogPostRepository->findAll();
             $blogPost = array_rand($blogPosts);
